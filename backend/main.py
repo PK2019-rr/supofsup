@@ -8,7 +8,6 @@ from datetime import datetime
 import glob
 import shutil
 import requests
-from serpapi import GoogleSearch
 from bs4 import BeautifulSoup
 
 
@@ -42,24 +41,6 @@ def search_in_yandex(query):
     if response.status_code == 200:
         return response.text  # Возвращаем текст для дальнейшей обработки
     return None
-
-# === Поиск в Google через SerpApi ===
-def search_in_google(query):
-    params = {
-        "q": query,
-        "api_key": os.getenv("SERPAPI_KEY"),
-        "engine": "google",
-    }
-
-    search = GoogleSearch(params)
-    results = search.get_dict()
-    search_results = []
-
-    for result in results.get('organic_results', [])[:5]:
-        url = result.get("link")
-        search_results.append(url)
-    
-    return search_results
 
 # === Извлечение информации с сайта ===
 def scrape_info(url):
