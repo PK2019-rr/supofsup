@@ -32,7 +32,6 @@ def log_message(role, text):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"{now} {role} -> {text}\n")
-")
     if os.path.getsize(LOG_FILE) > 1024 * 1024:
         rotate_log_if_needed()
 
