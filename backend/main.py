@@ -138,14 +138,14 @@ HTML_TEMPLATE = """
 
 @app.route("/admin")
 def admin():
-    if request.args.get("token") != ACCESS_TOKEN:
+    if request.args.get("token") != ADMIN_TOKEN:
         return "Access denied", 403
     files = sorted([os.path.basename(f) for f in glob.glob(LOG_DIR + "/*.txt")], reverse=True)
-    return render_template_string(HTML_TEMPLATE, files=files, token=ACCESS_TOKEN)
+    return render_template_string(HTML_TEMPLATE, files=files, token=ADMIN_TOKEN)
 
 @app.route("/admin/log")
 def current_log():
-    if request.args.get("token") != ACCESS_TOKEN:
+    if request.args.get("token") != ADMIN_TOKEN:
         return "Access denied", 403
     if not os.path.exists(LOG_FILE): return "Лог пуст"
     with open(LOG_FILE, encoding="utf-8") as f:
@@ -153,12 +153,10 @@ def current_log():
 
 @app.route("/admin/archive/<filename>")
 def archived_log(filename):
-    if request.args.get("token") != ACCESS_TOKEN:
+    if request.args.get("token") != ADMIN_TOKEN:
         return "Access denied", 403
     return send_from_directory(LOG_DIR, filename)
 
-# === Запуск ===
 if __name__ == "__main__":
-    Thread(target=bot.infinity_polling).start()
+    Thread(target=lambda: bot.set_webhook(url=os.getenv("WEBHOOK_URL"))).start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
-    """)
