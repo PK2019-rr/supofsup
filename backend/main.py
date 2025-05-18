@@ -49,6 +49,14 @@ def scrape_info(url):
     text = soup.get_text()
     return text[:500]  # Берем первые 500 символов для обработки
 
+def rotate_log_if_needed():
+    if not os.path.exists(LOG_FILE): return
+    size_mb = os.path.getsize(LOG_FILE) / (1024 * 1024)
+    if size_mb >= 1:
+        os.makedirs(LOG_DIR, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        shutil.move(LOG_FILE, os.path.join(LOG_DIR, f"log_{ts}.txt"))
+
 rotate_log_if_needed()
 
 def log_message(role, text):
