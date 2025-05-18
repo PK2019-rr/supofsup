@@ -1,3 +1,5 @@
+from logrotate import rotate_log_if_needed
+rotate_log_if_needed()
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 import os
