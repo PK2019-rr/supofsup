@@ -47,13 +47,13 @@ def telegram_respond(message):
         reply = "Создание и анализ скриптов запрещено согласно декрету Praefecto Ordinis."
     else:
         try:
-            completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
-                    {"role": "user", "content": msg}
-                ]
-            )
+completion = openai.ChatCompletion.create(
+    model="gpt-4",  # Используем GPT-4
+    messages=[
+        {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
+        {"role": "user", "content": msg}
+    ]
+)
             reply = completion.choices[0].message.content
         except Exception as e:
             reply = f"[Ошибка]: {str(e)}"
