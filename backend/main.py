@@ -41,14 +41,13 @@ def log_message(role, text):
         rotate_log_if_needed()
 
 # === Telegram ===
+bot.remove_webhook()  # Убираем вебхук сразу при старте
+
 @bot.message_handler(func=lambda m: m.text and m.text.lower().startswith("слава машине"))
 def telegram_respond(message):
-    # Удаляем предыдущий вебхук перед установкой нового
-    bot.remove_webhook()
-
-    # Теперь установим новый вебхук
+    # Устанавливаем вебхук при каждом новом запросе
     bot.set_webhook(url="https://supofsup.onrender.com/telegram")
-    
+
     msg = message.text.split(" ", 2)[-1].strip()
     if not msg or msg.lower() == "слава машине":
         bot.reply_to(message, "Уточни запрос.")
