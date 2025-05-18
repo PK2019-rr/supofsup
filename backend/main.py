@@ -8,8 +8,8 @@ from datetime import datetime
 import glob
 import shutil
 import requests
-from bs4 import BeautifulSoup
 from serpapi import GoogleSearch
+from bs4 import BeautifulSoup
 
 
 load_dotenv()
@@ -25,11 +25,11 @@ LOG_DIR = os.path.join(os.path.dirname(__file__), "log_archive")
 openai.api_key = OPENAI_API_KEY
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-# Функция для поиска в Яндексе
+# === Поиск в Яндексе ===
 def search_in_yandex(query):
     url = "https://xml.yandex.ru/xml?"
     params = {
-        "user": yandex_api_key,
+        "user": os.getenv("YANDEX_API_KEY"),
         "query": query,
         "l10n": "ru",
         "groupby": "none",
@@ -43,11 +43,11 @@ def search_in_yandex(query):
         return response.text  # Возвращаем текст для дальнейшей обработки
     return None
 
-# Функция для поиска в Google через SerpApi
+# === Поиск в Google через SerpApi ===
 def search_in_google(query):
     params = {
         "q": query,
-        "api_key": serp_api_key,
+        "api_key": os.getenv("SERPAPI_KEY"),
         "engine": "google",
     }
 
@@ -61,20 +61,12 @@ def search_in_google(query):
     
     return search_results
 
-# Функция для извлечения текста с сайта через BeautifulSoup
+# === Извлечение информации с сайта ===
 def scrape_info(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     text = soup.get_text()
     return text[:500]  # Берем первые 500 символов для обработки
-
-def rotate_log_if_needed():
-    if not os.path.exists(LOG_FILE): return
-    size_mb = os.path.getsize(LOG_FILE) / (1024 * 1024)
-    if size_mb >= 1:
-        os.makedirs(LOG_DIR, exist_ok=True)
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        shutil.move(LOG_FILE, os.path.join(LOG_DIR, f"log_{ts}.txt"))
 
 rotate_log_if_needed()
 
@@ -85,7 +77,7 @@ def log_message(role, text):
     if os.path.getsize(LOG_FILE) > 1024 * 1024:
         rotate_log_if_needed()
 
-# Функция для ответа на сообщения
+# === Telegram ===
 @bot.message_handler(func=lambda m: m.text and m.text.lower().startswith("слава машине"))
 def telegram_respond(message):
     msg = message.text.split(" ", 2)[-1].strip()
@@ -99,8 +91,7 @@ def telegram_respond(message):
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                            {"role": "system",
-                            "content": "Ты ИТ-помощник. Помоги мне с решением проблем по теме Windows, Exchange, Outlook, AD, RDP, Microsoft Office. Не предоставляй общие советы, если проблема уже решена официально или снята с поддержки. Ищи только актуальную информацию, в том числе, в интернете."},
+                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
                     {"role": "user", "content": msg}
                 ]
             )
@@ -110,6 +101,7 @@ def telegram_respond(message):
     bot.reply_to(message, reply)
     log_message("Telegram", msg + " => " + reply)
 
+# === Веб-интерфейс ===
 @app.route("/")
 def root():
     return send_from_directory(app.static_folder, "index.html")
@@ -117,7 +109,7 @@ def root():
 @app.route("/api/ask", methods=["POST"])
 def ask():
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer ") or auth.split(" ")[1] != USER_TOKEN:
+    if not auth.startswith("Bearer ") or auth.split(" ")[1] != ACCESS_TOKEN:
         return jsonify({"error": "Unauthorized"}), 401
     data = request.get_json()
     msg = data.get("message", "")
@@ -127,7 +119,7 @@ def ask():
     else:
         try:
             completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
                     {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
                     {"role": "user", "content": msg}
@@ -139,40 +131,21 @@ def ask():
     log_message("Bot", reply)
     return jsonify({"reply": reply})
 
-HTML_TEMPLATE = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>SUPofSUP - Админка</title>
-    <style>
-        body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-        pre { background: #222; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
-        a { color: #8cf; }
-    </style>
-</head>
-<body>
-    <h1>SUPofSUP - Логи</h1>
-    <p><a href='/admin/log?token={{token}}'>Текущий лог</a></p>
-    <ul>
-        {% for f in files %}
-        <li><a href='/admin/archive/{{f}}?token={{token}}'>{{f}}</a></li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
-'''
+# === Админка ===
+HTML_TEMPLATE = """
+<!DOCTYPE html><html><head><meta charset=utf-8><title>SUPofSUP - Админка</title><style>body{font-family:sans-serif;background:#111;color:#eee;padding:20px}pre{background:#222;padding:10px;border-radius:5px;white-space:pre-wrap}a{color:#8cf}</style></head><body><h1>SUPofSUP — Логи</h1><p><a href='/admin/log?token={{token}}'>Текущий лог</a></p><ul>{% for f in files %}<li><a href='/admin/archive/{{f}}?token={{token}}'>{{f}}</a></li>{% endfor %}</ul></body></html>
+"""
 
 @app.route("/admin")
 def admin():
-    if request.args.get("token") != ADMIN_TOKEN:
+    if request.args.get("token") != ACCESS_TOKEN:
         return "Access denied", 403
     files = sorted([os.path.basename(f) for f in glob.glob(LOG_DIR + "/*.txt")], reverse=True)
-    return render_template_string(HTML_TEMPLATE, files=files, token=ADMIN_TOKEN)
+    return render_template_string(HTML_TEMPLATE, files=files, token=ACCESS_TOKEN)
 
 @app.route("/admin/log")
 def current_log():
-    if request.args.get("token") != ADMIN_TOKEN:
+    if request.args.get("token") != ACCESS_TOKEN:
         return "Access denied", 403
     if not os.path.exists(LOG_FILE): return "Лог пуст"
     with open(LOG_FILE, encoding="utf-8") as f:
@@ -180,10 +153,12 @@ def current_log():
 
 @app.route("/admin/archive/<filename>")
 def archived_log(filename):
-    if request.args.get("token") != ADMIN_TOKEN:
+    if request.args.get("token") != ACCESS_TOKEN:
         return "Access denied", 403
     return send_from_directory(LOG_DIR, filename)
 
+# === Запуск ===
 if __name__ == "__main__":
-    Thread(target=lambda: bot.set_webhook(url=os.getenv("WEBHOOK_URL"))).start()
+    Thread(target=bot.infinity_polling).start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+    """)
