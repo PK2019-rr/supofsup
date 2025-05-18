@@ -98,7 +98,7 @@ def root():
 @app.route("/api/ask", methods=["POST"])
 def ask():
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer ") or auth.split(" ")[1] != ACCESS_TOKEN:
+    if not auth.startswith("Bearer ") or auth.split(" ")[1] != USER_TOKEN:
         return jsonify({"error": "Unauthorized"}), 401
     data = request.get_json()
     msg = data.get("message", "")
