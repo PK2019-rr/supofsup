@@ -51,7 +51,8 @@ def telegram_respond(message):
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
+                            {"role": "system",
+                            "content": "Ты ИТ-помощник. Помоги мне с решением проблем по теме Windows, Exchange, Outlook, AD, RDP, Microsoft Office. Не предоставляй общие советы, если проблема уже решена официально или снята с поддержки. Ищи только актуальную информацию."},
                     {"role": "user", "content": msg}
                 ]
             )
