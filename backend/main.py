@@ -9,7 +9,7 @@ import glob
 import shutil
 import requests
 from bs4 import BeautifulSoup
-
+import logging
 
 load_dotenv()
 app = Flask(__name__, static_folder="../frontend")
@@ -18,11 +18,14 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
 USER_TOKEN = os.getenv("USER_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-yandex_api_key = os.getenv("yandex_api_key")
+YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 LOG_DIR = os.path.join(os.path.dirname(__file__), "log_archive")
 openai.api_key = OPENAI_API_KEY
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
+
+# Настроим логирование
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # === Поиск в Яндексе ===
 def search_in_yandex(query):
@@ -37,10 +40,24 @@ def search_in_yandex(query):
         "maxpassages": "5",
     }
     
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.text  # Возвращаем текст для дальнейшей обработки
-    return None
+    try:
+        logging.info(f"Инициализация запроса к Яндекс.XML с параметром: {query}")
+        response = requests.get(url, params=params)
+        
+        # Проверяем статус ответа
+        if response.status_code == 200:
+            logging.info("Ответ от Яндекс.XML получен успешно.")
+            # Проверка на пустой ответ или неправильный формат
+            if not response.text or '<error>' in response.text:
+                logging.error(f"Ответ от Яндекс содержит ошибку или пустой: {response.text}")
+                return None
+            return response.text  # Возвращаем текст для дальнейшей обработки
+        else:
+            logging.error(f"Неудачный ответ от Яндекс: HTTP {response.status_code}")
+            return None
+    except Exception as e:
+        logging.error(f"Ошибка при запросе к Яндекс.XML: {str(e)}")
+        return None
 
 # === Извлечение информации с сайта ===
 def scrape_info(url):
