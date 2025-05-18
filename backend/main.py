@@ -7,6 +7,10 @@ from threading import Thread
 from datetime import datetime
 import glob
 import shutil
+import requests
+from bs4 import BeautifulSoup
+from serpapi import GoogleSearch
+
 
 load_dotenv()
 app = Flask(__name__, static_folder="../frontend")
@@ -15,10 +19,54 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
 USER_TOKEN = os.getenv("USER_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+yandex_api_key = s.getenv("yandex_api_key")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 LOG_DIR = os.path.join(os.path.dirname(__file__), "log_archive")
 openai.api_key = OPENAI_API_KEY
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
+
+# Функция для поиска в Яндексе
+def search_in_yandex(query):
+    url = "https://xml.yandex.ru/xml?"
+    params = {
+        "user": yandex_api_key,
+        "query": query,
+        "l10n": "ru",
+        "groupby": "none",
+        "filter": "none",
+        "sortby": "rlv",
+        "maxpassages": "5",
+    }
+    
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        return response.text  # Возвращаем текст для дальнейшей обработки
+    return None
+
+# Функция для поиска в Google через SerpApi
+def search_in_google(query):
+    params = {
+        "q": query,
+        "api_key": serp_api_key,
+        "engine": "google",
+    }
+
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    search_results = []
+
+    for result in results.get('organic_results', [])[:5]:
+        url = result.get("link")
+        search_results.append(url)
+    
+    return search_results
+
+# Функция для извлечения текста с сайта через BeautifulSoup
+def scrape_info(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    text = soup.get_text()
+    return text[:500]  # Берем первые 500 символов для обработки
 
 def rotate_log_if_needed():
     if not os.path.exists(LOG_FILE): return
