@@ -2,3 +2,5 @@ flask
 openai==0.28
 python-dotenv
 pyTelegramBotAPI
+bs4
+BeautifulSoup
