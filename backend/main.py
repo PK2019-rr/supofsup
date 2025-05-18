@@ -37,6 +37,7 @@ def log_message(role, text):
     if os.path.getsize(LOG_FILE) > 1024 * 1024:
         rotate_log_if_needed()
 
+# Функция для ответа на сообщения
 @bot.message_handler(func=lambda m: m.text and m.text.lower().startswith("слава машине"))
 def telegram_respond(message):
     msg = message.text.split(" ", 2)[-1].strip()
@@ -47,13 +48,13 @@ def telegram_respond(message):
         reply = "Создание и анализ скриптов запрещено согласно декрету Praefecto Ordinis."
     else:
         try:
-completion = openai.ChatCompletion.create(
-    model="gpt-4",  # Используем GPT-4
-    messages=[
-        {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
-        {"role": "user", "content": msg}
-    ]
-)
+            completion = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
+                    {"role": "user", "content": msg}
+                ]
+            )
             reply = completion.choices[0].message.content
         except Exception as e:
             reply = f"[Ошибка]: {str(e)}"
