@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Servitor Custodum Protocolorum</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: #eee; padding: 2rem; }
+        input, textarea, button { font-size: 1rem; margin-top: 0.5rem; width: 100%%; padding: 0.5rem; }
+        #response { white-space: pre-wrap; margin-top: 1rem; border: 1px solid #444; padding: 1rem; background: #222; }
+    </style>
+</head>
+<body>
+    <h1>Servitor Custodum Protocolorum</h1>
+    <p>Авторизационный токен:</p>
+    <input type="password" id="token" placeholder="Введите токен">
+    <p>Ваш запрос:</p>
+    <textarea id="msg" rows="4" placeholder="Например: Не приходит почта в Outlook..."></textarea>
+    <button onclick="send()">Отправить</button>
+    <div id="response"></div>
+
+    <script>
+        async function send() {
+            const token = document.getElementById("token").value;
+            const msg = document.getElementById("msg").value;
+            const respBox = document.getElementById("response");
+            respBox.innerText = "⌛ Обработка запроса...";
+            try {
+                const r = await fetch("/api/ask", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await r.json();
+                respBox.innerText = data.reply || "Ошибка обработки.";
+            } catch (e) {
+                respBox.innerText = "Ошибка подключения: " + e;
+            }
+        }
+    </script>
+</body>
+</html>
