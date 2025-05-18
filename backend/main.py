@@ -114,7 +114,8 @@ def ask():
 
 # === Админка ===
 HTML_TEMPLATE = """
-<!DOCTYPE html><html><head><meta charset=utf-8><title>SUPofSUP - Админка</title><style>body{font-family:sans-serif;background:#111;color:#eee;padding:20px}pre{background:#222;padding:10px;border-radius:5px;white-space:pre-wrap}a{color:#8cf}</style></head><body><h1>SUPofSUP — Логи</h1><p><a href='/admin/log?token={{token}}'>Текущий лог</a></p><ul>{% for f in files %}<li><a href='/admin/archive/{{f}}?token={{token}}'>{{f}}</a></li>{% endfor %}</ul></body></html>
+<!DOCTYPE html><html><head><meta charset=utf-8><title>SUPofSUP - Админка</title>
+<style>body{font-family:sans-serif;background:#111;color:#eee;padding:20px}pre{background:#222;padding:10px;border-radius:5px;white-space:pre-wrap}a{color:#8cf}</style></head><body><h1>SUPofSUP - Логи</h1><p><a href='/admin/log?token={{token}}'>Текущий лог</a></p><ul>{% for f in files %}<li><a href='/admin/archive/{{f}}?token={{token}}'>{{f}}</a></li>{% endfor %}</ul></body></html>
 """
 
 @app.route("/admin")
