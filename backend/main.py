@@ -140,16 +140,25 @@ def archived_log(filename):
         return "Access denied", 403
     return send_from_directory(LOG_DIR, filename)
 
-# === Запуск ===
+# === Webhook обработка ===
+@app.route('/telegram', methods=['POST'])
+def telegram_webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    return 'Invalid request', 403
+
+# === Запуск с установкой webhook ===
 if __name__ == "__main__":
-    import threading
-
-    def run_polling():
-        try:
-            bot.infinity_polling()
-        except Exception as e:
-            notify_telegram(f"❌ Ошибка запуска бота: {e}")
-            log_message("Error", f"Polling Error → {e}")
-
-    threading.Thread(target=run_polling).start()
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # должен быть задан в .env
+    try:
+        bot.remove_webhook()
+        bot.set_webhook(url=WEBHOOK_URL)
+        log_message("System", f"Webhook установлен: {WEBHOOK_URL}")
+        notify_telegram(f"🔧 Webhook установлен: {WEBHOOK_URL}")
+    except Exception as e:
+        log_message("Error", f"Ошибка установки webhook: {e}")
+        notify_telegram(f"❌ Ошибка установки webhook: {e}")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
