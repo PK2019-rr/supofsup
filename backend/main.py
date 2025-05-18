@@ -43,23 +43,30 @@ def log_message(role, text):
 # === Telegram ===
 @bot.message_handler(func=lambda m: m.text and m.text.lower().startswith("слава машине"))
 def telegram_respond(message):
+    # Удаляем предыдущий вебхук перед установкой нового
+    bot.remove_webhook()
+
+    # Теперь установим новый вебхук
+    bot.set_webhook(url="https://supofsup.onrender.com/telegram")
+    
     msg = message.text.split(" ", 2)[-1].strip()
     if not msg or msg.lower() == "слава машине":
         bot.reply_to(message, "Уточни запрос.")
         return
     if any(x in msg.lower() for x in ["скрипт", "script", "код", "code"]):
-        return
-    try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
-                {"role": "user", "content": msg}
-            ]
-        )
-        reply = completion.choices[0].message.content
-    except Exception as e:
-        reply = f"[Ошибка]: {str(e)}"
+        reply = "Создание и анализ скриптов запрещено согласно декрету Praefecto Ordinis."
+    else:
+        try:
+            completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
+                    {"role": "user", "content": msg}
+                ]
+            )
+            reply = completion.choices[0].message.content
+        except Exception as e:
+            reply = f"[Ошибка]: {str(e)}"
     bot.reply_to(message, reply)
     log_message("Telegram", msg + " => " + reply)
 
