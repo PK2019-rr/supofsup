@@ -30,6 +30,18 @@ def rotate_log_if_needed():
         shutil.move(LOG_FILE, os.path.join(LOG_DIR, f"log_{ts}.txt"))
 rotate_log_if_needed()
 
+# === Telegram уведомления ===
+def notify_telegram(text):
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": 1421610910, "text": text}
+        )
+    except Exception as e:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now()}] Error → Ошибка отправки в Telegram: {e}\n")
+
 # === Логирование ===
 def log_message(role, text):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -59,6 +71,11 @@ def telegram_respond(message):
             reply = completion.choices[0].message.content
         except Exception as e:
             reply = f"[Ошибка]: {str(e)}"
+    if "quota" in str(e).lower() or "$4.5" in str(e):
+        notify_telegram("⚠️ Превышение квоты OpenAI: возможны перебои!")
+    else:
+        notify_telegram(reply)
+    log_message("Error", reply)
     bot.reply_to(message, reply)
     log_message("Telegram", msg + " => " + reply)
 
@@ -89,6 +106,11 @@ def ask():
             reply = completion.choices[0].message.content
         except Exception as e:
             reply = f"[Ошибка]: {str(e)}"
+    if "quota" in str(e).lower() or "$4.5" in str(e):
+        notify_telegram("⚠️ Превышение квоты OpenAI: возможны перебои!")
+    else:
+        notify_telegram(reply)
+    log_message("Error", reply)
     log_message("Bot", reply)
     return jsonify({"reply": reply})
 
