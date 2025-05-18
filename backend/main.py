@@ -142,5 +142,14 @@ def archived_log(filename):
 
 # === Запуск ===
 if __name__ == "__main__":
-    Thread(target=bot.infinity_polling).start()
+    import threading
+
+    def run_polling():
+        try:
+            bot.infinity_polling()
+        except Exception as e:
+            notify_telegram(f"❌ Ошибка запуска бота: {e}")
+            log_message("Error", f"Polling Error → {e}")
+
+    threading.Thread(target=run_polling).start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
