@@ -4,20 +4,55 @@
     <meta charset="UTF-8">
     <title>Servitor Custodum Protocolorum</title>
     <style>
-        body { font-family: sans-serif; background: #111; color: #eee; padding: 2rem; }
-        h1 {font-family: 'Romvel', sans-serif;}
-        input, textarea, button { font-size: 1rem; margin-top: 0.5rem; width: 100%%; padding: 0.5rem; }
-        #response { white-space: pre-wrap; margin-top: 1rem; border: 1px solid #444; padding: 1rem; background: #222; }
+        body {
+            font-family: sans-serif;
+            background: #111;
+            color: #eee;
+            padding: 2rem;
+        }
+        h1 {
+            font-family: 'Romvel', sans-serif;
+        }
+        input, textarea, button {
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 0.5rem;
+        }
+        #response {
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            border: 1px solid #444;
+            padding: 1rem;
+            background: #222;
+        }
+        .container {
+            display: flex;
+            align-items: center;
+        }
+        .inputs {
+            flex: 1;
+            margin-right: 20px;
+        }
+        .logo {
+            width: 150px;
+            height: auto;
+        }
     </style>
 </head>
 <body>
     <h1>Servitor Custodum Protocolorum</h1>
-    <p>Авторизационный токен:</p>
-    <input type="password" id="token" placeholder="Введите токен">
-    <p>Ваш запрос:</p>
-    <textarea id="msg" rows="4" placeholder="Например: Не приходит почта в Outlook..."></textarea>
-    <button onclick="send()">Отправить</button>
-    <div id="response"></div>
+    <div class="container">
+        <div class="inputs">
+            <p>Авторизационный токен:</p>
+            <input type="password" id="token" placeholder="Введите токен">
+            <p>Ваш запрос:</p>
+            <textarea id="msg" rows="4" placeholder="Например: Не приходит почта в Outlook..."></textarea>
+            <button onclick="send()">Отправить</button>
+            <div id="response"></div>
+        </div>
+        <img src="COG0.png" alt="Cog Emblem" class="logo">
+    </div>
 
     <script>
         async function send() {
