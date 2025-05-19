@@ -1,18 +1,20 @@
 
 import requests
+import json
 from datetime import datetime
 import os
 
-API_URL = "https://duckduckgo-search-api.p.rapidapi.com/htmlSearch"
-API_HOST = "duckduckgo-search-api.p.rapidapi.com"
+API_URL = "https://all-serp.p.rapidapi.com/all-serp-website"
+API_HOST = "all-serp.p.rapidapi.com"
 API_KEY = "a69dc9ff3bmsh46bf57b8bbea8b6p1ed8dfjsn84ae671d48e7"
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 MAX_TOKENS = 512
 
 HEADERS = {
-    "X-RapidAPI-Key": API_KEY,
-    "X-RapidAPI-Host": API_HOST
+    "x-rapidapi-key": API_KEY,
+    "x-rapidapi-host": API_HOST,
+    "Content-Type": "application/json"
 }
 
 def log_debug(prefix, message):
@@ -22,39 +24,45 @@ def log_debug(prefix, message):
 
 def get_search_summary(query):
     try:
-        params = {"q": query, "df": "d", "kl": "ru-ru"}
-        response = requests.get(API_URL, headers=HEADERS, params=params, timeout=10)
+        params = {
+            "keyword": query,
+            "location": "us",
+            "language": "en",
+            "search_engine": "google",
+            "page_limit": 1,
+            "search_type": "All"
+        }
 
-        log_debug("RapidAPI Icons Response", f"Status {response.status_code}")
-        log_debug("RapidAPI Icons Raw", response.text[:1000])
+        response = requests.post(API_URL, headers=HEADERS, params=params, data=json.dumps({"dummy": "value"}), timeout=20)
+
+        log_debug("AllSerp API Response", f"Status {response.status_code}")
+        log_debug("AllSerp API Raw", response.text[:1000])
 
         if response.status_code != 200:
-            msg = f"Ошибка RapidAPI Icons: {response.status_code}"
-            log_debug("RapidAPI Icons Error", msg)
+            msg = f"Ошибка AllSerp API: {response.status_code}"
+            log_debug("AllSerp API Error", msg)
             return msg
 
         data = response.json()
-        results = data.get("results", [])
+        results = data.get("data", {}).get("organic", [])
 
         if not results:
-            msg = "Нет результатов (RapidAPI Icons)"
-            log_debug("RapidAPI Icons Empty", msg)
+            msg = "Нет результатов по запросу (AllSerp)"
+            log_debug("AllSerp Empty", msg)
             return msg
 
         snippets = []
-        for res in results[:5]:
-            title = res.get("title", "Без заголовка").strip()
-            snippet = res.get("description", "Без описания").strip()
-            link = res.get("url", "без ссылки")
-            icon = res.get("icon", "")
-            icon_str = f"[иконка: {icon}]" if icon else ""
-            snippets.append(f"🔹 {title} {icon_str}\n{snippet}\nИсточник: {link}")
+        for item in results[:5]:
+            title = item.get("title", "Без заголовка").strip()
+            snippet = item.get("description", "Без описания").strip()
+            link = item.get("url", "без ссылки")
+            snippets.append(f"🔹 {title}\n{snippet}\nИсточник: {link}")
 
         return "\n\n".join(snippets)
 
     except Exception as e:
-        msg = f"Ошибка при обращении к RapidAPI Icons: {str(e)}"
-        log_debug("RapidAPI Icons Exception", msg)
+        msg = f"Ошибка при обращении к AllSerp: {str(e)}"
+        log_debug("AllSerp Exception", msg)
         return msg
 
 def trim_tokens(text, max_tokens=MAX_TOKENS):
