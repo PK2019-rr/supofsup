@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 import os
 
-DDG_URL = "https://html.duckduckgo.com/html/"
+DDG_URL = "https://duckduckgo.com/html/"
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 
 MAX_TOKENS = 512
@@ -20,7 +20,7 @@ def log_debug(prefix, message):
 
 def get_search_summary(query):
     try:
-        response = requests.post(DDG_URL, data={"q": query}, headers=HEADERS, timeout=10)
+        response = requests.post(DDG_URL, data={"q": query}, headers=HEADERS, timeout=15)
         log_debug("DuckDuckGo HTML Response", f"Status {response.status_code}")
         log_debug("DuckDuckGo HTML Raw", response.text[:1000])
 
