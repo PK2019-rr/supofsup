@@ -1,70 +1,23 @@
+
 from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from dotenv import load_dotenv
 import os
-import openai
 import telebot
 from threading import Thread
 from datetime import datetime
 import glob
 import shutil
-import requests
-from bs4 import BeautifulSoup
-import logging
+from query_handler import process_user_query
 
 load_dotenv()
 app = Flask(__name__, static_folder="../frontend")
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
 USER_TOKEN = os.getenv("USER_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 LOG_DIR = os.path.join(os.path.dirname(__file__), "log_archive")
-openai.api_key = OPENAI_API_KEY
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-
-# Настроим логирование
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# === Поиск в Яндексе ===
-def search_in_yandex(query):
-    url = "https://xml.yandex.ru/xml?"
-    params = {
-        "user": os.getenv("YANDEX_API_KEY"),
-        "query": query,
-        "l10n": "ru",
-        "groupby": "none",
-        "filter": "none",
-        "sortby": "rlv",
-        "maxpassages": "5",
-    }
-    
-    try:
-        logging.info(f"Инициализация запроса к Яндекс.XML с параметром: {query}")
-        response = requests.get(url, params=params)
-        
-        # Проверяем статус ответа
-        if response.status_code == 200:
-            logging.info("Ответ от Яндекс.XML получен успешно.")
-            # Проверка на пустой ответ или неправильный формат
-            if not response.text or '<error>' in response.text:
-                logging.error(f"Ответ от Яндекс содержит ошибку или пустой: {response.text}")
-                return None
-            return response.text  # Возвращаем текст для дальнейшей обработки
-        else:
-            logging.error(f"Неудачный ответ от Яндекс: HTTP {response.status_code}")
-            return None
-    except Exception as e:
-        logging.error(f"Ошибка при запросе к Яндекс.XML: {str(e)}")
-        return None
-
-# === Извлечение информации с сайта ===
-def scrape_info(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    text = soup.get_text()
-    return text[:500]  # Берем первые 500 символов для обработки
 
 def rotate_log_if_needed():
     if not os.path.exists(LOG_FILE): return
@@ -93,17 +46,7 @@ def telegram_respond(message):
     if any(x in msg.lower() for x in ["скрипт", "script", "код", "code"]):
         reply = "Создание и анализ скриптов запрещено согласно декрету Praefecto Ordinis."
     else:
-        try:
-            completion = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
-                    {"role": "user", "content": msg}
-                ]
-            )
-            reply = completion.choices[0].message.content
-        except Exception as e:
-            reply = f"[Ошибка]: {str(e)}"
+        reply = process_user_query(msg)
     bot.reply_to(message, reply)
     log_message("Telegram", msg + " => " + reply)
 
@@ -123,17 +66,7 @@ def ask():
     if any(x in msg.lower() for x in ["скрипт", "script", "код", "code"]):
         reply = "Создание и анализ скриптов запрещено согласно декрету Praefecto Ordinis."
     else:
-        try:
-            completion = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "Ты ИТ-помощник. Только по теме Windows, Exchange, Outlook, AD. Скрипты запрещены."},
-                    {"role": "user", "content": msg}
-                ]
-            )
-            reply = completion.choices[0].message.content
-        except Exception as e:
-            reply = f"[Ошибка]: {str(e)}"
+        reply = process_user_query(msg)
     log_message("Bot", reply)
     return jsonify({"reply": reply})
 
