@@ -1,16 +1,17 @@
 
-import os
 import requests
+from bs4 import BeautifulSoup
 import re
 from datetime import datetime
+import os
 
-YANDEX_USER = os.getenv("YANDEX_USER")
-YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
-YANDEX_FOLDERID = os.getenv("YANDEX_FOLDERID")
-YANDEX_URL = "https://yandex.ru/search/xml"
+YANDEX_URL = "https://yandex.ru/search/"
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 
 MAX_TOKENS = 512
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+}
 
 def log_debug(prefix, message):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -18,46 +19,40 @@ def log_debug(prefix, message):
         f.write(f"{now} {prefix} → {message}\n")
 
 def get_search_summary(query):
-    if not YANDEX_USER or not YANDEX_API_KEY or not YANDEX_FOLDERID:
-        msg = "YANDEX API ключ, user или folderid не указан."
-        log_debug("Yandex API Error", msg)
-        return msg
-
-    params = {
-        "user": YANDEX_USER,
-        "apikey": YANDEX_API_KEY,
-        "folderid": YANDEX_FOLDERID,
-        "query": query,
-        "l10n": "ru",
-        "sortby": "rlv",
-        "filter": "none",
-        "maxpassages": "4",
-        "groupby": "attr=d.mode=deep.groups-on-page=5.docs-in-group=1"
-    }
-
     try:
-        response = requests.get(YANDEX_URL, params=params)
-        log_debug("Yandex API Response", f"Status {response.status_code}")
-        log_debug("Yandex API Raw", response.text[:2000])
+        response = requests.get(YANDEX_URL, params={"text": query}, headers=HEADERS, timeout=10)
+        log_debug("Yandex HTML Response", f"Status {response.status_code}")
+        log_debug("Yandex HTML Raw", response.text[:1000])
 
         if response.status_code != 200:
-            msg = f"Ошибка Yandex XML API: {response.status_code}"
-            log_debug("Yandex API Error", msg)
+            msg = f"Ошибка HTML запроса: {response.status_code}"
+            log_debug("Yandex HTML Error", msg)
             return msg
 
-        text = response.text
-        snippets = re.findall(r"<passage>(.*?)</passage>", text, re.DOTALL)
-        cleaned = [re.sub("<.*?>", "", s).strip() for s in snippets if s.strip()]
-        if cleaned:
-            return "\n\n".join([f"🔹 {s}" for s in cleaned])
-        else:
-            msg = "Нет результатов по запросу в Яндексе."
-            log_debug("Yandex API Error", msg)
+        soup = BeautifulSoup(response.text, "html.parser")
+        items = soup.select("div.serp-item")
+
+        snippets = []
+        for item in items[:5]:
+            title_tag = item.select_one("h2 a") or item.select_one("a.Link")
+            snippet_tag = item.select_one("div.TextContainer-descr") or item.select_one("div.OrganicTextContent")
+
+            title = title_tag.text.strip() if title_tag else "Без заголовка"
+            snippet = snippet_tag.text.strip() if snippet_tag else "Без описания"
+            link = title_tag.get("href") if title_tag and title_tag.has_attr("href") else "без ссылки"
+
+            snippets.append(f"🔹 {title}\n{snippet}\nИсточник: {link}")
+
+        if not snippets:
+            msg = "Нет результатов по запросу (HTML)."
+            log_debug("Yandex HTML Empty", msg)
             return msg
+
+        return "\n\n".join(snippets)
 
     except Exception as e:
-        msg = f"Ошибка при обращении к Яндекс API: {str(e)}"
-        log_debug("Yandex API Exception", msg)
+        msg = f"Ошибка при HTML-парсинге: {str(e)}"
+        log_debug("Yandex HTML Exception", msg)
         return msg
 
 def trim_tokens(text, max_tokens=MAX_TOKENS):
