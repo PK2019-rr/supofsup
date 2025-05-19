@@ -25,7 +25,7 @@ def get_search_summary(query):
 
     params = {
         "user": YANDEX_USER,
-        "key": YANDEX_API_KEY,
+        "apikey": YANDEX_API_KEY,
         "query": query,
         "folderid": YANDEX_FOLDERID,
         "l10n": "ru",
