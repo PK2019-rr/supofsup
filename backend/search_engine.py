@@ -1,16 +1,18 @@
 
 import requests
-from bs4 import BeautifulSoup
-import re
 from datetime import datetime
 import os
 
-DDG_URL = "https://duckduckgo.com/html/"
-LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
+API_URL = "https://duckduckgo8.p.rapidapi.com/"
+API_HOST = "duckduckgo8.p.rapidapi.com"
+API_KEY = "a69dc9ff3bmsh46bf57b8bbea8b6p1ed8dfjsn84ae671d48e7"
 
+LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 MAX_TOKENS = 512
+
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Host": API_HOST
 }
 
 def log_debug(prefix, message):
@@ -20,41 +22,37 @@ def log_debug(prefix, message):
 
 def get_search_summary(query):
     try:
-        response = requests.post(DDG_URL, data={"q": query}, headers=HEADERS, timeout=15)
-        log_debug("DuckDuckGo HTML Response", f"Status {response.status_code}")
-        log_debug("DuckDuckGo HTML Raw", response.text[:1000])
+        response = requests.get(API_URL, headers=HEADERS, params={"q": query}, timeout=10)
+        log_debug("RapidAPI Response", f"Status {response.status_code}")
+        log_debug("RapidAPI Raw", response.text[:1000])
 
         if response.status_code != 200:
-            msg = f"Ошибка DuckDuckGo запроса: {response.status_code}"
-            log_debug("DuckDuckGo HTML Error", msg)
+            msg = f"Ошибка RapidAPI DuckDuckGo: {response.status_code}"
+            log_debug("RapidAPI Error", msg)
             return msg
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        results = soup.select("div.result")
+        data = response.json()
+        results = data.get("results", [])
+
+        if not results:
+            msg = "Нет результатов по запросу (RapidAPI DuckDuckGo)."
+            log_debug("RapidAPI Empty", msg)
+            return msg
 
         snippets = []
-        for item in results[:5]:
-            title_tag = item.select_one("a.result__a")
-            snippet_tag = item.select_one("a.result__snippet")
-            title = title_tag.text.strip() if title_tag else "Без заголовка"
-            snippet = snippet_tag.text.strip() if snippet_tag else "Без описания"
-            link = title_tag.get("href") if title_tag and title_tag.has_attr("href") else "без ссылки"
+        for res in results[:5]:
+            title = res.get("title", "Без заголовка").strip()
+            snippet = res.get("description", "Без описания").strip()
+            link = res.get("url", "без ссылки")
             snippets.append(f"🔹 {title}\n{snippet}\nИсточник: {link}")
-
-        if not snippets:
-            msg = "Нет результатов по запросу (DuckDuckGo)."
-            log_debug("DuckDuckGo HTML Empty", msg)
-            return msg
 
         return "\n\n".join(snippets)
 
     except Exception as e:
-        msg = f"Ошибка при HTML-парсинге DDG: {str(e)}"
-        log_debug("DuckDuckGo HTML Exception", msg)
+        msg = f"Ошибка при обращении к RapidAPI DuckDuckGo: {str(e)}"
+        log_debug("RapidAPI Exception", msg)
         return msg
 
 def trim_tokens(text, max_tokens=MAX_TOKENS):
     words = text.split()
-    if len(words) <= max_tokens:
-        return text
-    return " ".join(words[:max_tokens]) + "..."
+    return text if len(words) <= max_tokens else " ".join(words[:max_tokens]) + "..."
