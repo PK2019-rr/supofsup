@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SUPofSUP - Админка</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
+        pre { background: #222; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+        a { color: #8cf; margin-right: 10px; }
+        input, select { padding: 5px; }
+    </style>
+    <script>
+        function filterLogs() {
+            const keyword = document.getElementById('filter').value.toLowerCase();
+            const lines = document.getElementById('logcontent').innerText.split('\n');
+            const filtered = lines.filter(line => line.toLowerCase().includes(keyword));
+            document.getElementById('logcontent').innerText = filtered.join('\n');
+        }
+    </script>
+</head>
+<body>
+    <h1>SUPofSUP - Логи</h1>
+    <p><a href='/admin/log?token={{token}}'>Текущий лог</a></p>
+    <ul>
+        {% for f in files %}
+            <li><a href='/admin/archive/{{f}}?token={{token}}'>{{f}}</a></li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+    <h3>🔍 Быстрый фильтр</h3>
+    <input type="text" id="filter" placeholder="например: Yandex API Raw">
+    <button onclick="filterLogs()">Фильтровать</button>
+
+    <hr>
+    <div><pre id="logcontent">{% if log %}{{ log }}{% else %}Выберите лог для просмотра.{% endif %}</pre></div>
+</body>
+</html>
