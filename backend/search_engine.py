@@ -7,7 +7,7 @@ from datetime import datetime
 YANDEX_USER = os.getenv("YANDEX_USER")
 YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 YANDEX_FOLDERID = os.getenv("YANDEX_FOLDERID")
-YANDEX_URL = "https://yandex.com/search/xml"
+YANDEX_URL = "https://yandex.ru/search/xml"
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 
 MAX_TOKENS = 512
@@ -28,8 +28,8 @@ def get_search_summary(query):
         "apikey": YANDEX_API_KEY,
         "folderid": YANDEX_FOLDERID,
         "query": query,
-        "l10n": "en",
-        "sortby": "tm.order=descending",
+        "l10n": "ru",
+        "sortby": "rlv",
         "filter": "none",
         "maxpassages": "4",
         "groupby": "attr=d.mode=deep.groups-on-page=5.docs-in-group=1"
@@ -38,7 +38,7 @@ def get_search_summary(query):
     try:
         response = requests.get(YANDEX_URL, params=params)
         log_debug("Yandex API Response", f"Status {response.status_code}")
-        log_debug("Yandex API Raw", response.text[:2000])  # ограничим до 2000 символов
+        log_debug("Yandex API Raw", response.text[:2000])
 
         if response.status_code != 200:
             msg = f"Ошибка Yandex XML API: {response.status_code}"
