@@ -2,57 +2,25 @@
 import os
 import requests
 import re
+from datetime import datetime
 
-SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 YANDEX_USER = os.getenv("YANDEX_USER")
 YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 YANDEX_URL = "https://yandex.ru/search/xml"
+LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 
 MAX_TOKENS = 512
 
+def log_error(message):
+    now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"{now} Yandex API Error → {message}\n")
+
 def get_search_summary(query):
-    summary = search_google(query)
-    if "Ошибка" in summary or "нет результатов" in summary.lower():
-        summary = search_yandex(query)
-
-    return trim_tokens(summary)
-
-def search_google(query):
-    if not SERPAPI_KEY:
-        return "SerpApi API ключ не найден."
-
-    url = "https://serpapi.com/search"
-    params = {
-        "q": query,
-        "engine": "google",
-        "api_key": SERPAPI_KEY,
-        "hl": "ru",
-        "num": 5
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code != 200:
-            return f"Ошибка SerpApi: {response.status_code}"
-
-        data = response.json()
-        snippets = []
-
-        for res in data.get("organic_results", []):
-            title = res.get("title", "").strip()
-            snippet = res.get("snippet", "").strip()
-            link = res.get("link", "").strip()
-            if snippet:
-                snippets.append(f"🔹 {title}\n{snippet}\nИсточник: {link}")
-
-        return "\n\n".join(snippets) if snippets else "Нет результатов по запросу в Google."
-
-    except Exception as e:
-        return f"Ошибка при обращении к SerpApi: {str(e)}"
-
-def search_yandex(query):
     if not YANDEX_USER or not YANDEX_API_KEY:
-        return "YANDEX API ключ или user не указан."
+        msg = "YANDEX API ключ или user не указан."
+        log_error(msg)
+        return msg
 
     params = {
         "user": YANDEX_USER,
@@ -65,18 +33,24 @@ def search_yandex(query):
     try:
         response = requests.get(YANDEX_URL, params=params)
         if response.status_code != 200:
-            return f"Ошибка Yandex XML API: {response.status_code}"
+            msg = f"Ошибка Yandex XML API: {response.status_code}"
+            log_error(msg)
+            return msg
 
         text = response.text
         snippets = re.findall(r"<passage>(.*?)</passage>", text, re.DOTALL)
         cleaned = [re.sub("<.*?>", "", s).strip() for s in snippets if s.strip()]
         if cleaned:
-            return "\n\n".join([f"🔸 {s}" for s in cleaned])
+            return "\n\n".join([f"🔹 {s}" for s in cleaned])
         else:
-            return "Нет результатов по запросу в Яндексе."
+            msg = "Нет результатов по запросу в Яндексе."
+            log_error(msg)
+            return msg
 
     except Exception as e:
-        return f"Ошибка при обращении к Яндекс API: {str(e)}"
+        msg = f"Ошибка при обращении к Яндекс API: {str(e)}"
+        log_error(msg)
+        return msg
 
 def trim_tokens(text, max_tokens=MAX_TOKENS):
     words = text.split()
