@@ -3,8 +3,8 @@ import requests
 from datetime import datetime
 import os
 
-API_URL = "https://duckduckgo8.p.rapidapi.com/"
-API_HOST = "duckduckgo8.p.rapidapi.com"
+API_URL = "https://duckduckgo-search-api.p.rapidapi.com/htmlSearchWithIcons"
+API_HOST = "duckduckgo-search-api.p.rapidapi.com"
 API_KEY = "a69dc9ff3bmsh46bf57b8bbea8b6p1ed8dfjsn84ae671d48e7"
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
@@ -22,21 +22,23 @@ def log_debug(prefix, message):
 
 def get_search_summary(query):
     try:
-        response = requests.get(API_URL, headers=HEADERS, params={"q": query}, timeout=10)
-        log_debug("RapidAPI Response", f"Status {response.status_code}")
-        log_debug("RapidAPI Raw", response.text[:1000])
+        params = {"q": query, "df": "d", "kl": "ru-ru"}
+        response = requests.get(API_URL, headers=HEADERS, params=params, timeout=10)
+
+        log_debug("RapidAPI Icons Response", f"Status {response.status_code}")
+        log_debug("RapidAPI Icons Raw", response.text[:1000])
 
         if response.status_code != 200:
-            msg = f"Ошибка RapidAPI DuckDuckGo: {response.status_code}"
-            log_debug("RapidAPI Error", msg)
+            msg = f"Ошибка RapidAPI Icons: {response.status_code}"
+            log_debug("RapidAPI Icons Error", msg)
             return msg
 
         data = response.json()
         results = data.get("results", [])
 
         if not results:
-            msg = "Нет результатов по запросу (RapidAPI DuckDuckGo)."
-            log_debug("RapidAPI Empty", msg)
+            msg = "Нет результатов (RapidAPI Icons)"
+            log_debug("RapidAPI Icons Empty", msg)
             return msg
 
         snippets = []
@@ -44,13 +46,15 @@ def get_search_summary(query):
             title = res.get("title", "Без заголовка").strip()
             snippet = res.get("description", "Без описания").strip()
             link = res.get("url", "без ссылки")
-            snippets.append(f"🔹 {title}\n{snippet}\nИсточник: {link}")
+            icon = res.get("icon", "")
+            icon_str = f"[иконка: {icon}]" if icon else ""
+            snippets.append(f"🔹 {title} {icon_str}\n{snippet}\nИсточник: {link}")
 
         return "\n\n".join(snippets)
 
     except Exception as e:
-        msg = f"Ошибка при обращении к RapidAPI DuckDuckGo: {str(e)}"
-        log_debug("RapidAPI Exception", msg)
+        msg = f"Ошибка при обращении к RapidAPI Icons: {str(e)}"
+        log_debug("RapidAPI Icons Exception", msg)
         return msg
 
 def trim_tokens(text, max_tokens=MAX_TOKENS):
