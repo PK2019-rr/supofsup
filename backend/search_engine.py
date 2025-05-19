@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import os
 
-API_URL = "https://duckduckgo-search-api.p.rapidapi.com/htmlSearchWithIcons"
+API_URL = "https://duckduckgo-search-api.p.rapidapi.com/htmlSearch"
 API_HOST = "duckduckgo-search-api.p.rapidapi.com"
 API_KEY = "a69dc9ff3bmsh46bf57b8bbea8b6p1ed8dfjsn84ae671d48e7"
 
