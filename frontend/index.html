@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -20,7 +21,6 @@
             padding: 0.5rem;
         }
         #response {
-            white-space: pre-wrap;
             margin-top: 1rem;
             border: 1px solid #444;
             padding: 1rem;
@@ -38,7 +38,11 @@
             width: auto;
             height: auto;
         }
+        a {
+            color: #8cf;
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <h1>Servitor Custodum Protocolorum</h1>
@@ -70,7 +74,7 @@
                     body: JSON.stringify({ message: msg })
                 });
                 const data = await r.json();
-                respBox.innerText = data.reply || "Ошибка обработки.";
+                respBox.innerHTML = marked.parse(data.reply || "Ошибка обработки.");
             } catch (e) {
                 respBox.innerText = "Ошибка подключения: " + e;
             }
