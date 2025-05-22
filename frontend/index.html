@@ -3,73 +3,80 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SUPofSUP — Виртуальный помощник</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <title>Servitor Custodum Protocolorum</title>
     <style>
         body {
-            background-color: #111;
-            color: #eee;
             font-family: sans-serif;
-            margin: 0;
+            background: #111;
+            color: #eee;
             padding: 2rem;
         }
-        textarea {
-            width: 100%%;
-            height: 80px;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: #222;
-            color: #fff;
-            border: 1px solid #555;
+        h1 {
+            font-family: 'Romvel', sans-serif;
         }
-        button {
-            padding: 10px 20px;
-            background: #4caf50;
-            color: white;
-            border: none;
-            cursor: pointer;
+        input, textarea, button {
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 0.5rem;
         }
         #response {
-            margin-top: 2rem;
+            margin-top: 1rem;
+            border: 1px solid #444;
             padding: 1rem;
             background: #222;
-            border-left: 5px solid #4caf50;
-            white-space: pre-wrap;
+        }
+        .container {
+            display: flex;
+            align-items: center;
+        }
+        .inputs {
+            flex: 1;
+            margin-right: 20px;
+        }
+        .logo {
+            width: auto;
+            height: auto;
         }
         a {
             color: #8cf;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <h1>SUPofSUP</h1>
-    <p>Введите ваш вопрос:</p>
-    <textarea id="query"></textarea>
-    <br>
-    <button onclick="ask()">Отправить</button>
-    <div id="response"></div>
+    <h1>Servitor Custodum Protocolorum</h1>
+    <div class="container">
+        <div class="inputs">
+            <p>Авторизационный токен:</p>
+            <input type="password" id="token" placeholder="Введите токен">
+            <p>Ваш запрос:</p>
+            <textarea id="msg" rows="4" placeholder="Например: Не приходит почта в Outlook..."></textarea>
+            <button onclick="send()">Отправить</button>
+            <div id="response"></div>
+        </div>
+        <img src="/frontend/COG0.png" alt="Cog Emblem" class="logo">
+    </div>
 
     <script>
-        async function ask() {
-            const query = document.getElementById('query').value;
-            const responseBox = document.getElementById('response');
-            responseBox.innerHTML = '⏳ Ожидаем ответ...';
-
+        async function send() {
+            const token = document.getElementById("token").value;
+            const msg = document.getElementById("msg").value;
+            const respBox = document.getElementById("response");
+            respBox.innerText = "⌛ Обработка запроса...";
             try {
-                const res = await fetch('/api/ask', {
-                    method: 'POST',
+                const r = await fetch("/api/ask", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer USER_TOKEN' // замените на ваш токен
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
                     },
-                    body: JSON.stringify({ message: query })
+                    body: JSON.stringify({ message: msg })
                 });
-
-                const data = await res.json();
-                const md = marked.parse(data.reply || '❌ Нет ответа');
-                responseBox.innerHTML = md;
+                const data = await r.json();
+                respBox.innerHTML = marked.parse(data.reply || "Ошибка обработки.");
             } catch (e) {
-                responseBox.innerHTML = '❌ Ошибка при обращении к API';
+                respBox.innerText = "Ошибка подключения: " + e;
             }
         }
     </script>
